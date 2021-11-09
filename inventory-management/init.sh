@@ -1,0 +1,1 @@
+psql -U postgres -f /app/sql/init.sql
