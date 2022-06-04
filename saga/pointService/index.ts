@@ -40,7 +40,12 @@ async function main(): Promise<void> {
 
         const success = Boolean(user && user.amount >= data.pointUse);
         if (success) {
-            db[data.userId].amount -= data.pointUse;
+            db.forEach((u) => {
+                if (u.userId !== data.userId) {
+                    return;
+                }
+                u.amount -= data.pointUse;
+            });
         }
 
         ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: success })));
@@ -58,9 +63,14 @@ async function main(): Promise<void> {
         const data = JSON.parse(msg.content.toString());
         const user = db.find((d) => d.userId === Number(data.userId));
 
-        const success = Boolean(user && user.amount);
+        const success = Boolean(user && user.amount && data.pointRefunded);
         if (success) {
-            db[data.userId].amount += data.pointRefunded;
+            db.forEach((u) => {
+                if (u.userId !== data.userId) {
+                    return;
+                }
+                u.amount += data.pointRefunded;
+            });
         }
 
         ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: success })));
