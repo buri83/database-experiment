@@ -1,4 +1,5 @@
 import * as amqplib from "amqplib";
+import { Queues } from "../queues";
 
 interface Point {
     userId: number;
@@ -8,11 +9,11 @@ interface Point {
 const db: Point[] = [
     {
         userId: 1,
-        amount: 0,
+        amount: 10000,
     },
     {
         userId: 2,
-        amount: 300,
+        amount: 0,
     },
     {
         userId: 4,
@@ -21,28 +22,48 @@ const db: Point[] = [
 ];
 
 async function main(): Promise<void> {
-    const queue = "tasks";
     const conn = await amqplib.connect("amqp://localhost");
 
     const ch1 = await conn.createChannel();
-    await ch1.assertQueue(queue);
+    await ch1.assertQueue(Queues.TakePoint);
+    await ch1.assertQueue(Queues.RefundPoint);
 
     // Listener
-    ch1.consume(queue, (msg) => {
-        if (msg !== null) {
-            console.log("Recieved:", msg.content.toString());
-            ch1.ack(msg);
-        } else {
+    ch1.consume(Queues.TakePoint, (msg) => {
+        if (!msg) {
             console.log("Consumer cancelled by server");
+            return;
         }
+        console.log(`Received TakePoint: ${msg.content.toString()}`);
+        const data = JSON.parse(msg.content.toString());
+        const user = db.find((d) => d.userId === Number(data.userId));
+
+        const success = Boolean(user && user.amount >= data.pointUse);
+        if (success) {
+            db[data.userId].amount -= data.pointUse;
+        }
+
+        ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: success })));
+        ch1.ack(msg);
     });
 
-    // // Sender
-    // const ch2 = await conn.createChannel();
+    ch1.consume(Queues.RefundPoint, (msg) => {
+        if (!msg) {
+            console.log("Consumer cancelled by server");
+            return;
+        }
+        console.log(`Received RefundPoint: ${msg.content.toString()}`);
+        const data = JSON.parse(msg.content.toString());
+        const user = db.find((d) => d.userId === Number(data.userId));
 
-    // setInterval(() => {
-    //     ch2.sendToQueue(queue, Buffer.from("something to do"));
-    // }, 1000);
+        const success = Boolean(user && user.amount);
+        if (success) {
+            db[data.userId].amount += data.pointRefunded;
+        }
+
+        ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: success })));
+        ch1.ack(msg);
+    });
 }
 
 main();

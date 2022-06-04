@@ -1,4 +1,5 @@
 import * as amqplib from "amqplib";
+import { Queues } from "../queues";
 
 enum UserStatus {
     Verified = "Verified",
@@ -30,20 +31,23 @@ const db: User[] = [
 ];
 
 async function main(): Promise<void> {
-    const queue = "tasks";
     const conn = await amqplib.connect("amqp://localhost");
 
     const ch1 = await conn.createChannel();
-    await ch1.assertQueue(queue);
+    await ch1.assertQueue(Queues.VerifyUser);
 
     // Listener
-    ch1.consume(queue, (msg) => {
-        if (msg !== null) {
-            console.log("Recieved:", msg.content.toString());
-            ch1.ack(msg);
-        } else {
+    ch1.consume(Queues.VerifyUser, (msg) => {
+        if (!msg) {
             console.log("Consumer cancelled by server");
+            return;
         }
+        console.log(`Received: ${msg.content.toString()}`);
+        const data = JSON.parse(msg.content.toString());
+        const user = db.find((d) => d.id === Number(data.userId));
+        const isValid = !!user && user.status === UserStatus.Verified;
+        ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: isValid })));
+        ch1.ack(msg);
     });
 
     // // Sender

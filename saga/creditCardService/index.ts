@@ -1,4 +1,5 @@
 import * as amqplib from "amqplib";
+import { Queues } from "../queues";
 
 enum CardStatus {
     Enabled = "Enabled",
@@ -31,7 +32,7 @@ const db: Card[] = [
 ];
 
 async function main(): Promise<void> {
-    const queue = "tasks";
+    const queue = Queues.AuthorizeCreditCard;
     const conn = await amqplib.connect("amqp://localhost");
 
     const ch1 = await conn.createChannel();
@@ -39,20 +40,17 @@ async function main(): Promise<void> {
 
     // Listener
     ch1.consume(queue, (msg) => {
-        if (msg !== null) {
-            console.log("Recieved:", msg.content.toString());
-            ch1.ack(msg);
-        } else {
+        if (!msg) {
             console.log("Consumer cancelled by server");
+            return;
         }
+        console.log(`Received: ${msg.content.toString()}`);
+        const data = JSON.parse(msg.content.toString());
+        const card = db.find((d) => d.cardNumber === data.cardNumber);
+        const isValid = !!card && card.status === CardStatus.Enabled;
+        ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: isValid })));
+        ch1.ack(msg);
     });
-
-    // // Sender
-    // const ch2 = await conn.createChannel();
-
-    // setInterval(() => {
-    //     ch2.sendToQueue(queue, Buffer.from("something to do"));
-    // }, 1000);
 }
 
 main();
