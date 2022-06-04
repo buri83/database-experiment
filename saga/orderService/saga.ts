@@ -62,7 +62,7 @@ interface OrderState {
 const db: { [K: string]: OrderState } = {};
 
 async function saga(): Promise<void> {
-    const conn = await amqplib.connect("amqp://localhost");
+    const conn = await amqplib.connect("amqp://mq");
 
     const ch1 = await conn.createChannel();
     await ch1.assertQueue(Queues.OrderCreated);

@@ -22,7 +22,7 @@ const db: Point[] = [
 ];
 
 async function main(): Promise<void> {
-    const conn = await amqplib.connect("amqp://localhost");
+    const conn = await amqplib.connect("amqp://mq");
 
     const ch1 = await conn.createChannel();
     await ch1.assertQueue(Queues.TakePoint);
@@ -45,6 +45,8 @@ async function main(): Promise<void> {
 
         ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: success })));
         ch1.ack(msg);
+
+        console.log(db);
     });
 
     ch1.consume(Queues.RefundPoint, (msg) => {
@@ -63,6 +65,8 @@ async function main(): Promise<void> {
 
         ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: success })));
         ch1.ack(msg);
+
+        console.log(db);
     });
 }
 

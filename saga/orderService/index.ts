@@ -43,11 +43,13 @@ app.post("/orders/", async (req, res, next) => {
     db[order.id] = order;
 
     // Sender
-    const conn = await amqplib.connect("amqp://localhost");
+    const conn = await amqplib.connect("amqp://mq");
     const channel = await conn.createChannel();
 
     channel.sendToQueue(Queues.OrderCreated, Buffer.from(JSON.stringify(order)));
     res.redirect("/orders/");
+
+    console.log(db);
 });
 app.get("/orders/", (req, res, next) => {
     res.send(`
@@ -63,6 +65,8 @@ app.get("/orders/", (req, res, next) => {
 
         <pre>${JSON.stringify(db, null, 2)}</pre>
     `);
+
+    console.log(db);
 });
 
 app.listen(3000);

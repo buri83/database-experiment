@@ -1,0 +1,12 @@
+FROM node:16.15-buster
+
+USER root
+
+WORKDIR /app/service
+
+ADD ./creditCardService /app/service 
+ADD ./queues.ts /app/
+
+RUN npm i
+
+CMD npm run start

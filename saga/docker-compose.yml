@@ -6,3 +6,46 @@ services:
         ports:
             - "5672:5672"
             - "15672:15672"
+        networks:
+            - common
+
+    order-service:
+        build:
+            dockerfile: Dockerfile.orderService
+            context: .
+        ports:
+            - "3000:3000"
+        networks:
+            - common
+        depends_on:
+            - mq
+
+    point-service:
+        build:
+            dockerfile: Dockerfile.pointService
+            context: .
+        networks:
+            - common
+        depends_on:
+            - mq
+
+    user-service:
+        build:
+            dockerfile: Dockerfile.userService
+            context: .
+        networks:
+            - common
+        depends_on:
+            - mq
+
+    credit-card-service:
+        build:
+            dockerfile: Dockerfile.creditCardService
+            context: .
+        networks:
+            - common
+        depends_on:
+            - mq
+
+networks:
+    common:

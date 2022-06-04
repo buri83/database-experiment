@@ -31,7 +31,7 @@ const db: User[] = [
 ];
 
 async function main(): Promise<void> {
-    const conn = await amqplib.connect("amqp://localhost");
+    const conn = await amqplib.connect("amqp://mq");
 
     const ch1 = await conn.createChannel();
     await ch1.assertQueue(Queues.VerifyUser);
@@ -48,14 +48,9 @@ async function main(): Promise<void> {
         const isValid = !!user && user.status === UserStatus.Verified;
         ch1.sendToQueue(Queues.SagaReply, Buffer.from(JSON.stringify({ orderId: data.orderId, success: isValid })));
         ch1.ack(msg);
+
+        console.log(db);
     });
-
-    // // Sender
-    // const ch2 = await conn.createChannel();
-
-    // setInterval(() => {
-    //     ch2.sendToQueue(queue, Buffer.from("something to do"));
-    // }, 1000);
 }
 
 main();
