@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+    web:
+        build:
+            dockerfile: Dockerfile
+            context: web/
+        ports:
+            - "3000:3000"
+        networks:
+            - common
+
+    client-a:
+        build:
+            dockerfile: Dockerfile
+            context: client_a/
+        networks:
+            - common
+        depends_on:
+            - web
+
+networks:
+    common:
