@@ -3,9 +3,6 @@ import time
 
 url = "http://web:3000/messages/"
 
-count = 0
-
-while True:
+for count in range(5):
     requests.post(url, data={"message": f"Hello, My count is {count}"})
-    count += 1
     time.sleep(10)

@@ -10,7 +10,7 @@ services:
         networks:
             - common
 
-    client-a:
+    you:
         build:
             dockerfile: Dockerfile
             context: client_a/
@@ -21,3 +21,5 @@ services:
 
 networks:
     common:
+        driver_opts:
+            com.docker.network.bridge.name: br-hack-tcp
