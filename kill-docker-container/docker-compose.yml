@@ -1,0 +1,13 @@
+version: "3"
+services:
+    webapp:
+        build:
+            context: ./webapp
+        ports:
+            - "5000:5000"
+
+    webapp-exec:
+        build:
+            context: ./webapp-exec
+        ports:
+            - "5001:5000"
