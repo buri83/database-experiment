@@ -6,8 +6,15 @@ services:
         ports:
             - "5000:5000"
 
+    webapp-init:
+        build:
+            context: ./webapp-init
+        ports:
+            - "5002:5000"
+        init: true
+
     webapp-exec:
         build:
             context: ./webapp-exec
         ports:
-            - "5001:5000"
+            - "5003:5000"
